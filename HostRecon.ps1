@@ -187,23 +187,36 @@ function Invoke-HostRecon{
         }
     Write-Output "`n"
 
-    #Getting AntiVirus Information
+	#Getting AntiVirus Information
+	
 
+	Write-Output "[*] Checking if AV is installed"
+	
+	$AV = $null
+	$AVNamespaces = @(
+	    "root\SecurityCenter2",
+	    "root\SecurityCenter"
+	)
+	
+	foreach ($ns in $AVNamespaces) {
+	    try {
+	        $AV = Get-WmiObject -Namespace $ns -Query "SELECT * FROM AntiVirusProduct" -ErrorAction Stop
+	        if ($AV) { break }
+	    }
+	    catch {
+	        continue
+	    }
+	}
 
-    Write-Output "[*] Checking if AV is installed"
+	if ($AV) {
+	    Write-Output "The following AntiVirus product(s) appear to be installed:"
+	    $AV | Select-Object displayName, pathToSignedProductExe | Format-Table -AutoSize | Out-String
+	}
+	else {
+	    Write-Output "No AntiVirus product detected or access to SecurityCenter namespace denied."
+	}
 
-    $AV = Get-WmiObject -Namespace "root\SecurityCenter2" -Query "SELECT * FROM AntiVirusProduct" 
-
-    If ($AV -ne "")
-        {
-            Write-Output "The following AntiVirus product appears to be installed:" $AV.displayName
-        }
-    If ($AV -eq "")
-        {
-            Write-Output "No AV detected."
-        }
-    Write-Output "`n"
-
+	Write-Output "`n"
     #Getting Local Firewall Status
 
     Write-Output "[*] Checking local firewall status."
